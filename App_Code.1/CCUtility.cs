@@ -165,25 +165,34 @@ namespace Book_Store
 			return Quote(Param);
 	}
 
-	public string Dlookup(string table, string field, string sWhere)
+	public string Dlookup(string table, string field, string column, object value)
 	{
-		string sSQL = "SELECT " + field + " FROM " + table + " WHERE " + sWhere;
+    // Whitelist validation
+    var allowedTables = new[] { "Users", "Orders" };
+    var allowedFields = new[] { "Name", "Email", "Amount" };
 
-		OleDbCommand command = new OleDbCommand(sSQL, Connection);
-		OleDbDataReader reader=command.ExecuteReader(CommandBehavior.SingleRow);
-		string sReturn;
+    if (!allowedTables.Contains(table))
+        throw new Exception("Invalid table");
 
-		if (reader.Read()) {
-			sReturn = reader[0].ToString();
-			if (sReturn == null)
-			sReturn = "";
-		} else {
-			sReturn = "";
-		}
+    if (!allowedFields.Contains(field))
+        throw new Exception("Invalid field");
 
-		reader.Close();
-		return sReturn;
+    string sSQL = $"SELECT {field} FROM {table} WHERE {column} = ?";
+
+    using (OleDbCommand command = new OleDbCommand(sSQL, Connection))
+    {
+        command.Parameters.AddWithValue("?", value);
+
+        using (OleDbDataReader reader = command.ExecuteReader(CommandBehavior.SingleRow))
+        {
+            if (reader.Read())
+                return reader[0]?.ToString() ?? "";
+        }
+    }
+
+    return "";
 	}
+
 
 	public int DlookupInt(string table, string field, string sWhere)
 	{
