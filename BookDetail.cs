@@ -556,50 +556,56 @@ if (Int16.Parse(Rating_rating_view.Text)==0){
 	}
 
 	
-	bool Rating_update_Click(Object Src, EventArgs E) {
-	    string sWhere = "";
-		string sSQL ="";
-		
-		bool bResult=Rating_Validate();
-		if(bResult){
-		
-	        if (p_Rating_item_id.Value.Length > 0) {
-        	    sWhere = sWhere + "item_id=" + CCUtility.ToSQL(p_Rating_item_id.Value, FieldTypes.Number);
-		    }
-		
-// Rating Check Event begin
-// Rating Check Event end
+	bool Rating_update_Click(Object Src, EventArgs E)
+	{
+    bool bResult = Rating_Validate();
+    if (!bResult)
+        return false;
 
-		if (bResult){
-		
-		sSQL = "update items set " +
-		"[rating]=" +CCUtility.ToSQL(Utility.GetParam("Rating_rating"),FieldTypes.Number)  +
-		",[rating_count]=" +CCUtility.ToSQL(Utility.GetParam("Rating_rating_count"),FieldTypes.Number) ;
+    // Input validation
+    int ratingValue;
+    int itemId;
 
-		
-	        sSQL = sSQL + " where " + sWhere;
-		
-// Rating Update Event begin
-sSQL="update items set rating=rating+" + Rating_rating.SelectedItem.Value + ", rating_count=rating_count+1 where item_id=" + Rating_item_id.Value;
-// Rating Update Event end
-Rating_BeforeSQLExecute(sSQL,"Update");
-		OleDbCommand cmd = new OleDbCommand(sSQL, Utility.Connection);
-			try {
-				cmd.ExecuteNonQuery();
-			} catch(Exception e) {
-				Rating_ValidationSummary.Text += e.Message;
-				Rating_ValidationSummary.Visible = true;
-				return false;
-			}
-		}
-	        
-		if (bResult){
-// Rating AfterUpdate Event begin
-// Rating AfterUpdate Event end
-		}
-		}
-		return bResult;
-	}
+    if (!int.TryParse(Rating_rating.SelectedItem.Value, out ratingValue))
+    {
+        Rating_ValidationSummary.Text = "Invalid rating value.";
+        Rating_ValidationSummary.Visible = true;
+        return false;
+    }
+
+    if (!int.TryParse(Rating_item_id.Value, out itemId))
+    {
+        Rating_ValidationSummary.Text = "Invalid item ID.";
+        Rating_ValidationSummary.Visible = true;
+        return false;
+    }
+
+    string sSQL = "UPDATE items " +
+                  "SET rating = rating + ?, " +
+                  "rating_count = rating_count + 1 " +
+                  "WHERE item_id = ?";
+
+    try
+    {
+        using (OleDbCommand cmd = new OleDbCommand(sSQL, Utility.Connection))
+        {
+            // IMPORTANT: Order matters in OleDb
+            cmd.Parameters.AddWithValue("?", ratingValue);
+            cmd.Parameters.AddWithValue("?", itemId);
+
+            cmd.ExecuteNonQuery();
+        }
+    }
+    catch (Exception ex)
+    {
+        Rating_ValidationSummary.Text = "Database error: " + ex.Message;
+        Rating_ValidationSummary.Visible = true;
+        return false;
+    }
+
+    return true;
+}
+
 
 void Rating_Action(Object Src, EventArgs E) {
 bool bResult=true;
