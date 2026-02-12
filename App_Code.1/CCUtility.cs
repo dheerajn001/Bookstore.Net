@@ -109,11 +109,14 @@ namespace Book_Store
 			}
 		}
 
-		public static string GetValue(DataRow row, string field) {
-			if (row[field].ToString() == null)
-				return "";
-			else
-				return row[field].ToString();
+		using System.Web;
+
+		public static string GetValue(DataRow row, string field)
+		{
+   		 if (row == null || row[field] == DBNull.Value)
+      		  return "";
+
+   		 return HttpUtility.HtmlEncode(row[field].ToString());
 		}
 
         public OleDbConnection Connection;
